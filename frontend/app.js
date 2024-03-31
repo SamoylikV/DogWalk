@@ -1,18 +1,19 @@
-document.getElementById('createItemForm').addEventListener('submit', function(e) {
+document.getElementById('createUserForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
-    const itemName = document.getElementById('itemName').value;
-    const itemPrice = document.getElementById('itemPrice').value;
-
-    fetch('/items', {
+    const email = document.getElementById('email').value;
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    console.log(email, username);
+    fetch('http://localhost:8000/users', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            // Add any required headers, such as authentication tokens
         },
         body: JSON.stringify({
-            name: itemName,
-            price: itemPrice
+            email: email,
+            username: username,
+            password: password
         }),
     })
     .then(response => response.json())
