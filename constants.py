@@ -1,4 +1,4 @@
-DATABASE_URL = "postgresql://samoylik:samoylik@localhost/dogwalk"
-SECRET_KEY = "cringe"
-ALGORITHM = "HS256"
+DATABASE_URL = "postgresql://user:password@localhost/dogwalk"
+SECRET_KEY = "SECRET_KEY"
+ALGORITHM = "ALGORITHM"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
