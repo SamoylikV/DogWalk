@@ -31,6 +31,12 @@ async def get_user_by_email(db: Database, email: str):
     return await db.fetch_one(query)
 
 
+async def get_walker(db: Database, username: str):
+    query = users.select().where(users.c.username == username)
+    user = await db.fetch_one(query)
+    return user['walker']
+
+
 async def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
@@ -59,6 +65,7 @@ async def verify_access_token(token: str, credentials_exception):
         return username
     except JWTError:
         raise credentials_exception
+
 
 async def authenticate_user(database: Database, username: str, password: str):
     user = await get_user_by_username(database, username)

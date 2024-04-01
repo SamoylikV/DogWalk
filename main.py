@@ -1,19 +1,25 @@
 from fastapi import Depends, FastAPI, HTTPException, status, APIRouter
 from auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 from fastapi.staticfiles import StaticFiles
-from database import metadata, database
+from database import metadata, database, ASYNC_DATABASE_URL
 from sqlalchemy.exc import IntegrityError
 from fastapi.responses import HTMLResponse, RedirectResponse
 from auth import hash_password
 from auth import get_user_by_username, get_user_by_email, authenticate_user, get_current_user
 from models import User, UserCreate, UserInDB, Token, LoginSchema, users
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 app = FastAPI()
+
 
 
 @app.on_event("startup")
 async def startup():
     await database.connect()
+    async_engine: AsyncEngine = create_async_engine(ASYNC_DATABASE_URL)
+    async with async_engine.begin() as conn:
+        await conn.run_sync(metadata.create_all)
 
 
 @app.on_event("shutdown")
@@ -51,9 +57,9 @@ async def create_user(user: UserCreate):
     try:
         hashed_password = await hash_password(user.password)
         query = users.insert().values(username=user.username, email=user.email,
-                                      hashed_password=hashed_password)
+                                      hashed_password=hashed_password, walker=user.walker)
         last_record_id = await database.execute(query)
-        return {"id": last_record_id, "username": user.username, "email": user.email}
+        return {"id": last_record_id, "username": user.username, "email": user.email, "walker": user.walker}
     except IntegrityError:
         raise HTTPException(status_code=400, detail="User already exists")
 

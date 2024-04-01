@@ -1,6 +1,9 @@
 from sqlalchemy import Column, Integer, String, Table
-from database import metadata
+from sqlalchemy.ext.declarative import declarative_base
 from pydantic import BaseModel
+from database import metadata
+
+Base = declarative_base()
 
 users = Table(
     "users", metadata,
@@ -8,7 +11,9 @@ users = Table(
     Column("username", String(50)),
     Column("email", String(50)),
     Column("hashed_password", String(100)),
+    Column("walker", Integer, default=0)
 )
+
 
 
 class Token(BaseModel):
@@ -25,7 +30,7 @@ class UserCreate(BaseModel):
     username: str
     email: str
     password: str
-
+    walker: int = 0
 
 class User(BaseModel):
     username: str
