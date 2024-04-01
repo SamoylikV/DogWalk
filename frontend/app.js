@@ -46,14 +46,33 @@ if (loginForm) {
         .catch(handleError);
     });
 }
+const logoutButton = document.getElementById('logoutButton');
+if (logoutButton) {
+    logoutButton.addEventListener('click', function(e) {
+        e.preventDefault();
+
+        fetch('/logout', {
+            method: 'GET',
+        })
+        .then(handleResponse)
+        .catch(handleError);
+    });
+}
 
 function handleResponse(response) {
     if (response.ok) {
         return response.json().then(data => {
             console.log(data);
+            if (response.url.endsWith('/users-login/')) {
+                localStorage.setItem('access_token', data.access_token);
+            }
             window.location.href = "/";
         });
     } else {
+        response.json().then(data => {
+            console.error('Error:', data.detail);
+            document.getElementById('error_message').textContent = data.detail;
+        });
         throw new Error('Network response was not ok.');
     }
 }

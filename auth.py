@@ -1,12 +1,24 @@
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
-from typing import Optional
 from constants import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from passlib.context import CryptContext
 from database import Database
-from models import User, users
+from models import users
+from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, status
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users-login/")
+
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    return verify_access_token(token, credentials_exception)
 
 
 async def get_user_by_username(db: Database, username: str):
@@ -41,10 +53,12 @@ async def verify_access_token(token: str, credentials_exception):
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
+        token_expiration: datetime = payload.get("exp")
+        if token_expiration is None or datetime.utcnow() > token_expiration:
+            raise credentials_exception
         return username
     except JWTError:
         raise credentials_exception
-
 
 async def authenticate_user(database: Database, username: str, password: str):
     user = await get_user_by_username(database, username)

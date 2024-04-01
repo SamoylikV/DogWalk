@@ -1,25 +1,12 @@
-from typing import Optional
 from fastapi import Depends, FastAPI, HTTPException, status, APIRouter
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel, EmailStr, Field
-from databases import Database
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String
-from datetime import datetime, timedelta
-from jose import JWTError, jwt
 from auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import select
 from database import metadata, database
-from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import IntegrityError
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from auth import hash_password
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from auth import get_user_by_username, get_user_by_email, authenticate_user
+from auth import get_user_by_username, get_user_by_email, authenticate_user, get_current_user
 from models import User, UserCreate, UserInDB, Token, LoginSchema, users
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 app = FastAPI()
 
@@ -42,9 +29,14 @@ async def signup():
 
 @app.get("/login", response_class=HTMLResponse)
 async def read_login():
-    with open('login.html', 'r') as f:
+    with open('frontend/login.html', 'r') as f:
         return HTMLResponse(content=f.read(), status_code=200)
 
+@app.get("/logout")
+async def logout():
+    response = RedirectResponse(url="/login")
+    response.delete_cookie("access_token")
+    return response
 
 @app.post("/users-signup/")
 async def create_user(user: UserCreate):
@@ -57,8 +49,9 @@ async def create_user(user: UserCreate):
         raise HTTPException(status_code=400, detail="Email already exists")
 
     try:
+        hashed_password = await hash_password(user.password)
         query = users.insert().values(username=user.username, email=user.email,
-                                      hashed_password=hash_password(user.password))
+                                      hashed_password=hashed_password)
         last_record_id = await database.execute(query)
         return {"id": last_record_id, "username": user.username, "email": user.email}
     except IntegrityError:
@@ -66,7 +59,7 @@ async def create_user(user: UserCreate):
 
 
 @app.post("/users-login/", response_model=Token)
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+async def login_for_access_token(form_data: LoginSchema):
     user = await authenticate_user(database, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
