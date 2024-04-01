@@ -77,4 +77,5 @@ async def main():
         return HTMLResponse(content=f.read(), status_code=200)
 
 
+
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
