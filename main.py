@@ -74,7 +74,11 @@ async def login_for_access_token(form_data: LoginSchema):
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = await create_access_token(data={"sub": user["username"]})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "email": user["email"]
+    }
 
 
 @app.get("/", response_class=HTMLResponse)

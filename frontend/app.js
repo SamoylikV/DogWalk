@@ -60,29 +60,49 @@ if (logoutButton) {
     });
 }
 
-
-// document.addEventListener('DOMContentLoaded', function () {
-//     var map = L.map('map').setView([59.9342802, 30.3350986], 13);
-//
-//     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-//         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-//     }).addTo(map);
-// });
-
 document.addEventListener('DOMContentLoaded', function () {
-    const accessToken = localStorage.getItem('access_token');
-    if (!accessToken) {
-        window.location.href = "/login";
-    } else {
-        document.getElementById('email').textContent = localStorage.getItem('user_email');
-        document.getElementById('userEmail').style.display = 'block';
-        document.getElementById('logoutButton').style.display = 'block';
-        var map = L.map('map').setView([59.9342802, 30.3350986], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-    }
+    var map = L.map('map').setView([59.9342802, 30.3350986], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    var waypoints = [];
+    var routeControl = null;
+    var markers = [];
+
+    map.on('click', function(e) {
+        var coord = e.latlng;
+        var lat = coord.lat;
+        var lng = coord.lng;
+
+        var marker = L.marker([lat, lng]).addTo(map)
+            .bindPopup("Вы выбрали точку: " + lat.toFixed(5) + ", " + lng.toFixed(5))
+            .openPopup();
+
+        markers.push(marker);
+
+        if (waypoints.length >= 2) {
+            waypoints = [];
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+            if (routeControl) {
+                map.removeControl(routeControl);
+                routeControl = null;
+            }
+        }
+
+        waypoints.push(L.latLng(lat, lng));
+        if (waypoints.length === 2) {
+            routeControl = L.Routing.control({
+                waypoints: waypoints,
+                routeWhileDragging: true,
+                createMarker: function() { return null; }
+            }).addTo(map);
+        }
+    });
 });
+
+
 
 function handleResponse(response) {
     if (response.ok) {
